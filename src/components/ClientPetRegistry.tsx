@@ -16,11 +16,11 @@ import {
   Trash2,
   Edit,
   X,
-  CheckCircle,
-  AlertCircle,
-  Syringe,
+  Printer,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { Pet, Client, PetSpecies, PetGender } from '../types';
+import { PrintDocumentModal, PrintDocType } from './PrintDocumentModal';
 
 interface ClientPetRegistryProps {
   onStartConsultationForPet: (petId: string) => void;
@@ -35,8 +35,10 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
     clients,
     pets,
     addClient,
-    addPet,
+    updateClient,
     deleteClient,
+    addPet,
+    updatePet,
     deletePet,
     getConsultationsByPetId,
     getRemindersByPetId,
@@ -47,11 +49,18 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
   const [selectedPet, setSelectedPet] = useState<Pet | null>(pets[0] || null);
 
   // Modals
-  const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
-  const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
-  const [targetClientIdForNewPet, setTargetClientIdForNewPet] = useState<string>('');
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  // New Client Form State
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
+
+  // Print PDF Modal state
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printDocType, setPrintDocType] = useState<PrintDocType>('patient_file');
+  const [printConsultationId, setPrintConsultationId] = useState<string | undefined>(undefined);
+
+  // Client Form State
   const [clientForm, setClientForm] = useState({
     name: '',
     cpf: '',
@@ -61,7 +70,7 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
     notes: '',
   });
 
-  // New Pet Form State
+  // Pet Form State
   const [petForm, setPetForm] = useState({
     clientId: '',
     name: '',
@@ -90,28 +99,63 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
     return matchesSearch && matchesSpecies;
   });
 
+  // Handlers for Client
+  const handleOpenAddClient = () => {
+    setEditingClient(null);
+    setClientForm({ name: '', cpf: '', phone: '', email: '', address: '', notes: '' });
+    setIsClientModalOpen(true);
+  };
+
+  const handleOpenEditClient = (client: Client) => {
+    setEditingClient(client);
+    setClientForm({
+      name: client.name || '',
+      cpf: client.cpf || '',
+      phone: client.phone || '',
+      email: client.email || '',
+      address: client.address || '',
+      notes: client.notes || '',
+    });
+    setIsClientModalOpen(true);
+  };
+
   const handleSaveClient = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientForm.name || !clientForm.phone) return;
 
-    const created = addClient(clientForm);
-    setClientForm({ name: '', cpf: '', phone: '', email: '', address: '', notes: '' });
-    setIsAddClientModalOpen(false);
+    if (editingClient) {
+      updateClient(editingClient.id, clientForm);
+    } else {
+      const created = addClient(clientForm);
+      // Prompt to add pet immediately
+      setEditingPet(null);
+      setPetForm((prev) => ({ ...prev, clientId: created.id, name: '' }));
+      setIsPetModalOpen(true);
+    }
 
-    // Optionally prompt to add a pet for this client immediately
-    setTargetClientIdForNewPet(created.id);
-    setPetForm((prev) => ({ ...prev, clientId: created.id }));
-    setIsAddPetModalOpen(true);
+    setIsClientModalOpen(false);
+    setEditingClient(null);
   };
 
-  const handleSavePet = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!petForm.name || !petForm.clientId) return;
+  const handleDeleteClientClick = (clientId: string, clientName: string) => {
+    if (confirm(`Deseja realmente excluir o tutor "${clientName}" e todos os seus pets cadastrados?`)) {
+      deleteClient(clientId);
+      if (selectedPet && selectedPet.clientId === clientId) {
+        setSelectedPet(pets.find((p) => p.clientId !== clientId) || null);
+      }
+    }
+  };
 
-    const createdPet = addPet(petForm);
-    setSelectedPet(createdPet);
+  // Handlers for Pet
+  const handleOpenAddPet = () => {
+    if (clients.length === 0) {
+      alert('Cadastre um tutor primeiro!');
+      handleOpenAddClient();
+      return;
+    }
+    setEditingPet(null);
     setPetForm({
-      clientId: '',
+      clientId: selectedPet ? selectedPet.clientId : clients[0].id,
       name: '',
       species: 'Cão',
       breed: '',
@@ -122,7 +166,62 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
       allergies: '',
       vaccinationStatus: 'Em Dia',
     });
-    setIsAddPetModalOpen(false);
+    setIsPetModalOpen(true);
+  };
+
+  const handleOpenEditPet = (pet: Pet) => {
+    setEditingPet(pet);
+    setPetForm({
+      clientId: pet.clientId,
+      name: pet.name,
+      species: pet.species,
+      breed: pet.breed,
+      gender: pet.gender,
+      weightKg: pet.weightKg,
+      birthDate: pet.birthDate || '',
+      microchip: pet.microchip || '',
+      allergies: pet.allergies || '',
+      vaccinationStatus: pet.vaccinationStatus,
+    });
+    setIsPetModalOpen(true);
+  };
+
+  const handleSavePet = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!petForm.name || !petForm.clientId) return;
+
+    if (editingPet) {
+      updatePet(editingPet.id, petForm);
+      setSelectedPet({ ...editingPet, ...petForm });
+    } else {
+      const createdPet = addPet(petForm);
+      setSelectedPet(createdPet);
+    }
+
+    setIsPetModalOpen(false);
+    setEditingPet(null);
+  };
+
+  const handleDeletePetClick = (petId: string, petName: string) => {
+    if (confirm(`Deseja realmente excluir o cadastro do pet "${petName}"?`)) {
+      deletePet(petId);
+      const remaining = pets.filter((p) => p.id !== petId);
+      setSelectedPet(remaining[0] || null);
+    }
+  };
+
+  // Printing Handlers
+  const handlePrintPatientFile = () => {
+    if (!selectedPet) return;
+    setPrintDocType('patient_file');
+    setPrintConsultationId(undefined);
+    setIsPrintModalOpen(true);
+  };
+
+  const handlePrintConsultationDoc = (consultationId: string) => {
+    setPrintDocType('prescription');
+    setPrintConsultationId(consultationId);
+    setIsPrintModalOpen(true);
   };
 
   const activeClient = selectedPet
@@ -147,31 +246,23 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
             <span>Ficha Cadastral de Tutores & Pacientes</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Gerencie o histórico médico de cães, gatos e outros pets cadastrados no consultório.
+            Cadastre, edite e gerencie o histórico de atendimentos e receitas dos pacientes do consultório.
           </p>
         </div>
 
         <div className="flex items-center space-x-2.5">
           <button
             id="btn-add-client-modal"
-            onClick={() => setIsAddClientModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-emerald-800 text-white font-bold text-xs hover:bg-emerald-900 shadow-sm flex items-center space-x-1.5 transition-all"
+            onClick={handleOpenAddClient}
+            className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 border border-slate-200/80 shadow-sm flex items-center space-x-1.5 transition-all"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 text-slate-600" />
             <span>Novo Tutor</span>
           </button>
           <button
             id="btn-add-pet-modal"
-            onClick={() => {
-              if (clients.length === 0) {
-                alert('Cadastre um tutor primeiro!');
-                setIsAddClientModalOpen(true);
-              } else {
-                setPetForm((prev) => ({ ...prev, clientId: clients[0].id }));
-                setIsAddPetModalOpen(true);
-              }
-            }}
-            className="px-4 py-2 rounded-xl bg-emerald-500 text-emerald-950 font-bold text-xs hover:bg-emerald-400 shadow-sm flex items-center space-x-1.5 transition-all"
+            onClick={handleOpenAddPet}
+            className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 shadow-md shadow-emerald-100 flex items-center space-x-1.5 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Pet</span>
@@ -266,19 +357,21 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          pet.vaccinationStatus === 'Em Dia'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : pet.vaccinationStatus === 'Pendente'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-rose-100 text-rose-800'
-                        }`}
-                      >
-                        Vacina {pet.vaccinationStatus}
-                      </span>
-                      <p className="text-[11px] text-slate-400 mt-1">{pet.weightKg} kg</p>
+                    <div className="text-right flex items-center space-x-2">
+                      <div>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            pet.vaccinationStatus === 'Em Dia'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : pet.vaccinationStatus === 'Pendente'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}
+                        >
+                          {pet.vaccinationStatus}
+                        </span>
+                        <p className="text-[11px] text-slate-400 mt-1">{pet.weightKg} kg</p>
+                      </div>
                     </div>
                   </div>
                 );
@@ -316,6 +409,25 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                       <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800">
                         {selectedPet.gender}
                       </span>
+
+                      {/* Edit Pet Button */}
+                      <button
+                        id="btn-edit-pet"
+                        onClick={() => handleOpenEditPet(selectedPet)}
+                        className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+                        title="Editar Ficha do Pet"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Delete Pet Button */}
+                      <button
+                        onClick={() => handleDeletePetClick(selectedPet.id, selectedPet.name)}
+                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"
+                        title="Excluir Pet"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                     <p className="text-xs text-slate-500 font-medium mt-1">
                       Espécie: <strong>{selectedPet.species}</strong> • Raça:{' '}
@@ -325,23 +437,58 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                   </div>
                 </div>
 
-                <button
-                  id="btn-start-consultation-for-pet"
-                  onClick={() => onStartConsultationForPet(selectedPet.id)}
-                  className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 shadow-sm flex items-center space-x-2 shrink-0 justify-center"
-                >
-                  <Stethoscope className="w-4 h-4" />
-                  <span>Iniciar Atendimento</span>
-                </button>
+                <div className="flex items-center space-x-2 shrink-0">
+                  {/* Print PDF Button */}
+                  <button
+                    id="btn-print-patient-file"
+                    onClick={handlePrintPatientFile}
+                    className="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 border border-slate-200 flex items-center space-x-1.5 transition-all"
+                    title="Imprimir Ficha Médica (PDF)"
+                  >
+                    <Printer className="w-4 h-4 text-emerald-700" />
+                    <span>Imprimir Ficha PDF</span>
+                  </button>
+
+                  <button
+                    id="btn-start-consultation-for-pet"
+                    onClick={() => onStartConsultationForPet(selectedPet.id)}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 shadow-md flex items-center space-x-2 justify-center"
+                  >
+                    <Stethoscope className="w-4 h-4" />
+                    <span>Novo Atendimento</span>
+                  </button>
+                </div>
               </div>
 
               {/* Patient Details & Tutor Information Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Tutor Info Card */}
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Dados do Tutor
-                  </span>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2 relative group">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Dados do Tutor Responsável
+                    </span>
+                    {activeClient && (
+                      <div className="flex items-center space-x-1">
+                        <button
+                          id="btn-edit-tutor"
+                          onClick={() => handleOpenEditClient(activeClient)}
+                          className="px-2 py-1 rounded bg-white text-emerald-700 text-[11px] font-bold border border-slate-200 hover:bg-emerald-50 flex items-center space-x-1 transition-colors"
+                        >
+                          <Edit className="w-3 h-3" />
+                          <span>Editar Tutor</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClientClick(activeClient.id, activeClient.name)}
+                          className="p-1 rounded bg-white text-rose-600 border border-slate-200 hover:bg-rose-50 transition-colors"
+                          title="Excluir Tutor"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <p className="text-sm font-bold text-slate-800">{activeClient?.name}</p>
                   <div className="text-xs text-slate-600 space-y-1">
                     <p className="flex items-center space-x-1.5">
@@ -356,15 +503,28 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                       <MapPin className="w-3.5 h-3.5 text-slate-400" />
                       <span className="line-clamp-1">{activeClient?.address}</span>
                     </p>
+                    {activeClient?.cpf && (
+                      <p className="text-[11px] text-slate-400 pt-0.5">
+                        CPF: <strong>{activeClient.cpf}</strong>
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Pet Clinical Alerts Card */}
                 <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 space-y-2">
-                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center space-x-1">
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Alertas Clínicos & Alergias</span>
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider flex items-center space-x-1">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Alertas Clínicos & Alergias</span>
+                    </span>
+                    <button
+                      onClick={() => handleOpenEditPet(selectedPet)}
+                      className="text-[11px] font-bold text-amber-900 hover:underline"
+                    >
+                      Editar
+                    </button>
+                  </div>
                   <p className="text-xs font-semibold text-slate-800">
                     {selectedPet.allergies || 'Nenhuma alergia relatada pelo tutor.'}
                   </p>
@@ -390,8 +550,7 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                     {activePetConsultations.map((cons) => (
                       <div
                         key={cons.id}
-                        onClick={() => onViewConsultationDetail(cons.id)}
-                        className="p-4 bg-white rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 transition-all cursor-pointer space-y-2"
+                        className="p-4 bg-white rounded-xl border border-slate-200 hover:border-emerald-300 transition-all space-y-2"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-emerald-800">
@@ -406,13 +565,29 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                             <strong>Diagnóstico:</strong> {cons.soapAssessment}
                           </p>
                         )}
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
-                          <span>
+                        {cons.requestedExams && (
+                          <p className="text-xs text-purple-900 bg-purple-50 p-2 rounded-lg border border-purple-100 font-medium">
+                            <strong>Exames Solicitados:</strong> {cons.requestedExams}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100">
+                          <span className="text-slate-500">
                             {cons.prescribedMeds.length} medicamento(s) prescrito(s)
                           </span>
-                          <span className="font-bold text-emerald-700">
-                            Cobrado: R$ {cons.costBreakdown.finalChargedPrice.toFixed(2)}
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            {/* Print Prescription / SOAP Button */}
+                            <button
+                              id={`btn-print-consultation-${cons.id}`}
+                              onClick={() => handlePrintConsultationDoc(cons.id)}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 border border-emerald-200 flex items-center space-x-1 transition-colors"
+                            >
+                              <Printer className="w-3 h-3" />
+                              <span>Imprimir / Gerar PDF</span>
+                            </button>
+                            <span className="font-bold text-emerald-800">
+                              R$ {cons.costBreakdown.finalChargedPrice.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -460,14 +635,16 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
         </div>
       </div>
 
-      {/* Modal: New Client / Tutor */}
-      {isAddClientModalOpen && (
+      {/* Modal: Client / Tutor (Add or Edit) */}
+      {isClientModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-lg font-bold text-slate-800">Cadastrar Novo Tutor</h3>
+              <h3 className="text-lg font-bold text-slate-800">
+                {editingClient ? 'Editar Ficha do Tutor' : 'Cadastrar Novo Tutor'}
+              </h3>
               <button
-                onClick={() => setIsAddClientModalOpen(false)}
+                onClick={() => setIsClientModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
@@ -547,16 +724,16 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
               <div className="pt-2 flex justify-end space-x-2">
                 <button
                   type="button"
-                  onClick={() => setIsAddClientModalOpen(false)}
+                  onClick={() => setIsClientModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-700 text-white font-bold hover:bg-emerald-800"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-sm"
                 >
-                  Salvar Tutor
+                  {editingClient ? 'Salvar Alterações' : 'Cadastrar Tutor'}
                 </button>
               </div>
             </form>
@@ -564,14 +741,16 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
         </div>
       )}
 
-      {/* Modal: New Pet */}
-      {isAddPetModalOpen && (
+      {/* Modal: Pet (Add or Edit) */}
+      {isPetModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-lg font-bold text-slate-800">Cadastrar Novo Pet</h3>
+              <h3 className="text-lg font-bold text-slate-800">
+                {editingPet ? 'Editar Ficha do Paciente' : 'Cadastrar Novo Pet'}
+              </h3>
               <button
-                onClick={() => setIsAddPetModalOpen(false)}
+                onClick={() => setIsPetModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
@@ -685,6 +864,17 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
               </div>
 
               <div>
+                <label className="block font-bold text-slate-700 mb-1">Microchip / Registro</label>
+                <input
+                  type="text"
+                  value={petForm.microchip}
+                  onChange={(e) => setPetForm({ ...petForm, microchip: e.target.value })}
+                  placeholder="Código do microchip"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
                 <label className="block font-bold text-slate-700 mb-1">Alergias ou Observações Médicas</label>
                 <input
                   type="text"
@@ -698,22 +888,31 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
               <div className="pt-2 flex justify-end space-x-2">
                 <button
                   type="button"
-                  onClick={() => setIsAddPetModalOpen(false)}
+                  onClick={() => setIsPetModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-700 text-white font-bold hover:bg-emerald-800"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 shadow-sm"
                 >
-                  Salvar Paciente
+                  {editingPet ? 'Salvar Alterações' : 'Salvar Paciente'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Print PDF Document Modal */}
+      <PrintDocumentModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        docType={printDocType}
+        consultationId={printConsultationId}
+        petId={selectedPet?.id}
+      />
     </div>
   );
 };

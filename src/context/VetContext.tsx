@@ -3,6 +3,7 @@ import {
   Client,
   Pet,
   Medication,
+  EquipmentItem,
   Consultation,
   Reminder,
   FinancialTransaction,
@@ -13,6 +14,7 @@ import {
   initialClients,
   initialPets,
   initialMedications,
+  initialEquipments,
   initialConsultations,
   initialReminders,
   initialTransactions,
@@ -26,6 +28,7 @@ interface VetContextType {
   clients: Client[];
   pets: Pet[];
   medications: Medication[];
+  equipments: EquipmentItem[];
   consultations: Consultation[];
   reminders: Reminder[];
   transactions: FinancialTransaction[];
@@ -43,6 +46,12 @@ interface VetContextType {
   updateMedication: (id: string, med: Partial<Medication>) => void;
   adjustMedicationStock: (id: string, amount: number) => void;
   deleteMedication: (id: string) => void;
+
+  // Equipment methods
+  addEquipment: (item: Omit<EquipmentItem, 'id'>) => void;
+  updateEquipment: (id: string, item: Partial<EquipmentItem>) => void;
+  adjustEquipmentStock: (id: string, amount: number) => void;
+  deleteEquipment: (id: string) => void;
 
   // Consultation methods
   addConsultation: (consultation: Omit<Consultation, 'id' | 'createdAt'>) => Consultation;
@@ -76,8 +85,9 @@ interface VetContextType {
   getConsultationsByPetId: (petId: string) => Consultation[];
   getRemindersByPetId: (petId: string) => Reminder[];
 
-  // Reset to initial data
+  // Reset to initial data or clear all data manually
   resetAllData: () => void;
+  clearAllData: () => void;
 }
 
 const VetContext = createContext<VetContextType | undefined>(undefined);
@@ -103,6 +113,11 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [medications, setMedications] = useState<Medication[]>(() => {
     const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_medications`);
     return saved ? JSON.parse(saved) : initialMedications;
+  });
+
+  const [equipments, setEquipments] = useState<EquipmentItem[]>(() => {
+    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_equipments`);
+    return saved ? JSON.parse(saved) : initialEquipments;
   });
 
   const [consultations, setConsultations] = useState<Consultation[]>(() => {
@@ -136,6 +151,10 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_medications`, JSON.stringify(medications));
   }, [medications]);
+
+  useEffect(() => {
+    localStorage.setItem(`${LOCAL_STORAGE_KEY}_equipments`, JSON.stringify(equipments));
+  }, [equipments]);
 
   useEffect(() => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}_consultations`, JSON.stringify(consultations));
@@ -221,6 +240,35 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteMedication = (id: string) => {
     setMedications((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  // Equipment methods
+  const addEquipment = (itemData: Omit<EquipmentItem, 'id'>) => {
+    const newItem: EquipmentItem = {
+      ...itemData,
+      id: `eq-${Date.now()}`,
+    };
+    setEquipments((prev) => [newItem, ...prev]);
+  };
+
+  const updateEquipment = (id: string, updatedFields: Partial<EquipmentItem>) => {
+    setEquipments((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...updatedFields } : e))
+    );
+  };
+
+  const adjustEquipmentStock = (id: string, delta: number) => {
+    setEquipments((prev) =>
+      prev.map((e) =>
+        e.id === id
+          ? { ...e, stockQuantity: Math.max(0, e.stockQuantity + delta) }
+          : e
+      )
+    );
+  };
+
+  const deleteEquipment = (id: string) => {
+    setEquipments((prev) => prev.filter((e) => e.id !== id));
   };
 
   // Pricing Calculation Function
@@ -361,15 +409,27 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getRemindersByPetId = (petId: string) =>
     reminders.filter((r) => r.petId === petId);
 
-  // Reset
+  // Reset & Clear
   const resetAllData = () => {
     setSettings(initialClinicSettings);
     setClients(initialClients);
     setPets(initialPets);
     setMedications(initialMedications);
+    setEquipments(initialEquipments);
     setConsultations(initialConsultations);
     setReminders(initialReminders);
     setTransactions(initialTransactions);
+    localStorage.clear();
+  };
+
+  const clearAllData = () => {
+    setClients([]);
+    setPets([]);
+    setMedications([]);
+    setEquipments([]);
+    setConsultations([]);
+    setReminders([]);
+    setTransactions([]);
     localStorage.clear();
   };
 
@@ -381,6 +441,7 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clients,
         pets,
         medications,
+        equipments,
         consultations,
         reminders,
         transactions,
@@ -394,6 +455,10 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateMedication,
         adjustMedicationStock,
         deleteMedication,
+        addEquipment,
+        updateEquipment,
+        adjustEquipmentStock,
+        deleteEquipment,
         addConsultation,
         updateConsultation,
         addReminder,
@@ -409,6 +474,7 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getConsultationsByPetId,
         getRemindersByPetId,
         resetAllData,
+        clearAllData,
       }}
     >
       {children}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useVetContext } from '../context/VetContext';
 import {
   TrendingUp,
@@ -14,8 +14,10 @@ import {
   Calculator,
   Clock,
   CheckCircle2,
+  Printer,
 } from 'lucide-react';
 import { TabType } from './Header';
+import { PrintDocumentModal } from './PrintDocumentModal';
 
 interface DashboardOverviewProps {
   setActiveTab: (tab: TabType) => void;
@@ -38,6 +40,15 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
     getPetById,
     getClientById,
   } = useVetContext();
+
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printConsultationId, setPrintConsultationId] = useState<string | undefined>(undefined);
+
+  const handlePrintConsultation = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setPrintConsultationId(id);
+    setIsPrintModalOpen(true);
+  };
 
   // Financial calculations
   const totalRevenue = transactions
@@ -267,10 +278,19 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                         )}
                       </div>
 
-                      <div className="flex sm:flex-col items-end justify-between sm:justify-center text-right shrink-0">
-                        <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                          R$ {cons.costBreakdown.finalChargedPrice.toFixed(2)}
-                        </span>
+                      <div className="flex sm:flex-col items-end justify-between sm:justify-center text-right shrink-0 gap-2">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={(e) => handlePrintConsultation(e, cons.id)}
+                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                            title="Imprimir Receituário / Prontuário PDF"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                            R$ {cons.costBreakdown.finalChargedPrice.toFixed(2)}
+                          </span>
+                        </div>
                         <span className="text-[11px] text-slate-400 mt-1 flex items-center space-x-1">
                           <Clock className="w-3 h-3" />
                           <span>
@@ -444,6 +464,13 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
         </div>
       </div>
+
+      <PrintDocumentModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        docType="prescription"
+        consultationId={printConsultationId}
+      />
     </div>
   );
 };

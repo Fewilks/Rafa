@@ -27,6 +27,26 @@ export interface Pet {
   photoUrl?: string;
 }
 
+export type EquipmentCategory =
+  | 'Material Descartável'
+  | 'Insumo Cirúrgico'
+  | 'Proteção e Higiene'
+  | 'Equipamento Clínico'
+  | 'Outros';
+
+export interface EquipmentItem {
+  id: string;
+  name: string;
+  category: EquipmentCategory;
+  stockQuantity: number;
+  unit: 'unidade' | 'caixa' | 'pacote' | 'rolo' | 'par';
+  minStockAlert: number;
+  unitCost: number; // Cost price in R$
+  supplier?: string;
+  notes?: string;
+  expirationDate?: string;
+}
+
 export type MedicationCategory =
   | 'Antibiótico'
   | 'Anti-inflamatório'
@@ -86,6 +106,7 @@ export interface Consultation {
   soapObjective: string; // Physical exam findings, temp, heart rate
   soapAssessment: string; // Diagnosis / Hypothesis
   soapPlan: string; // Treatment plan
+  requestedExams?: string; // Required / requested laboratory & imaging exams
   prescribedMeds: PrescribedMedication[];
   costBreakdown: CostBreakdown;
   status: ConsultationStatus;

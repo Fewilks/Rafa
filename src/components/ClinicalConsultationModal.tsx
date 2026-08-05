@@ -58,6 +58,7 @@ export const ClinicalConsultationModal: React.FC<ClinicalConsultationModalProps>
   const [soapObjective, setSoapObjective] = useState('');
   const [soapAssessment, setSoapAssessment] = useState('');
   const [soapPlan, setSoapPlan] = useState('');
+  const [requestedExams, setRequestedExams] = useState('');
 
   // Prescribed & Administered Meds
   const [prescribedMeds, setPrescribedMeds] = useState<PrescribedMedication[]>([]);
@@ -135,6 +136,7 @@ export const ClinicalConsultationModal: React.FC<ClinicalConsultationModalProps>
       soapObjective,
       soapAssessment,
       soapPlan,
+      requestedExams,
       prescribedMeds,
       costBreakdown: {
         ...priceBreakdown,
@@ -280,7 +282,20 @@ export const ClinicalConsultationModal: React.FC<ClinicalConsultationModalProps>
                   rows={2}
                   value={soapPlan}
                   onChange={(e) => setSoapPlan(e.target.value)}
-                  placeholder="Conduta terapêutica, exames solicitados, cuidados..."
+                  placeholder="Conduta terapêutica, retorno, cuidados..."
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block font-bold text-slate-700 mb-1">
+                  Exames Necessários / Solicitados (Laboratório, Imagem)
+                </label>
+                <textarea
+                  rows={2}
+                  value={requestedExams}
+                  onChange={(e) => setRequestedExams(e.target.value)}
+                  placeholder="Ex: Hemograma Completo, Ultrassom Abdominal, Perfil Renal e Hepático, Raio-X Torácico..."
                   className="w-full p-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500"
                 />
               </div>

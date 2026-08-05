@@ -3,14 +3,15 @@ import {
   Stethoscope,
   Users,
   Pill,
+  Syringe,
   CalendarCheck,
   Calculator,
   TrendingUp,
   PlusCircle,
-  Sparkles,
   AlertTriangle,
   Bell,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import { useVetContext } from '../context/VetContext';
 
@@ -18,6 +19,7 @@ export type TabType =
   | 'dashboard'
   | 'clients'
   | 'medications'
+  | 'equipment'
   | 'reminders'
   | 'calculator'
   | 'financial';
@@ -26,20 +28,25 @@ interface HeaderProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
   onOpenNewConsultation: () => void;
-  onOpenGeminiAssistant: () => void;
+  onOpenGeminiAssistant?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   onOpenNewConsultation,
-  onOpenGeminiAssistant,
 }) => {
-  const { settings, medications, reminders, resetAllData } = useVetContext();
+  const { settings, medications, equipments, reminders, resetAllData, clearAllData } = useVetContext();
 
-  const lowStockCount = medications.filter(
+  const lowStockMeds = medications.filter(
     (m) => m.stockQuantity <= m.minStockAlert
   ).length;
+
+  const lowStockEq = equipments.filter(
+    (e) => e.stockQuantity <= e.minStockAlert
+  ).length;
+
+  const lowStockCount = lowStockMeds + lowStockEq;
 
   const pendingRemindersCount = reminders.filter(
     (r) => r.status === 'Pendente'
@@ -77,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
               id="btn-low-stock-alert"
               onClick={() => setActiveTab('medications')}
               className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100/80 transition-colors"
-              title={`${lowStockCount} medicamento(s) com estoque baixo`}
+              title={`${lowStockCount} item(ns) com estoque baixo`}
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
               <span>{lowStockCount} Alerta de Estoque</span>
@@ -96,16 +103,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* AI Copilot */}
-          <button
-            id="btn-gemini-assistant"
-            onClick={onOpenGeminiAssistant}
-            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/80 shadow-sm transition-all"
-          >
-            <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
-            <span>Assistente Vet IA</span>
-          </button>
-
           {/* Start New Consultation */}
           <button
             id="btn-new-consultation"
@@ -116,16 +113,35 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Novo Atendimento</span>
           </button>
 
+          {/* Clear All Data for Manual Fill */}
+          <button
+            id="btn-clear-all-data"
+            onClick={() => {
+              if (
+                confirm(
+                  'Deseja APAGAR TODOS os dados para iniciar o preenchimento manual do zero?\n\nEsta ação limpa todos os clientes, pets, medicamentos, equipamentos, atendimentos e transações.'
+                )
+              ) {
+                clearAllData();
+              }
+            }}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors"
+            title="Limpar todos os dados e começar do zero para preenchimento manual"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+            <span>Limpar Dados (Do Zero)</span>
+          </button>
+
           {/* Reset Demo Data */}
           <button
             id="btn-reset-data"
             onClick={() => {
-              if (confirm('Deseja restaurar os dados originais de demonstração do Dr. Rafael Bastazini?')) {
+              if (confirm('Deseja restaurar os dados de demonstração originais?')) {
                 resetAllData();
               }
             }}
             className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 border border-slate-200/80 transition-colors"
-            title="Restaurar dados iniciais"
+            title="Restaurar dados de demonstração"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -172,9 +188,27 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Pill className="w-4 h-4" />
             <span>Medicamentos & Receitas</span>
-            {lowStockCount > 0 && (
+            {lowStockMeds > 0 && (
               <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white">
-                {lowStockCount}
+                {lowStockMeds}
+              </span>
+            )}
+          </button>
+
+          <button
+            id="nav-tab-equipment"
+            onClick={() => setActiveTab('equipment')}
+            className={`inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+              activeTab === 'equipment'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100 font-bold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+            }`}
+          >
+            <Syringe className="w-4 h-4" />
+            <span>Equipamentos & Insumos</span>
+            {lowStockEq > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white">
+                {lowStockEq}
               </span>
             )}
           </button>

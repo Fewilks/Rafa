@@ -4,6 +4,7 @@ import { Header, TabType } from './components/Header';
 import { DashboardOverview } from './components/DashboardOverview';
 import { ClientPetRegistry } from './components/ClientPetRegistry';
 import { MedicationManager } from './components/MedicationManager';
+import { EquipmentManager } from './components/EquipmentManager';
 import { RemindersSystem } from './components/RemindersSystem';
 import { ServicePriceCalculator } from './components/ServicePriceCalculator';
 import { FinancialProjections } from './components/FinancialProjections';
@@ -62,6 +63,8 @@ function DashboardContent() {
         )}
 
         {activeTab === 'medications' && <MedicationManager />}
+
+        {activeTab === 'equipamentos' && <EquipmentManager />}
 
         {activeTab === 'reminders' && <RemindersSystem />}
 
