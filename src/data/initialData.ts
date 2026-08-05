@@ -18,6 +18,11 @@ export const initialClinicSettings: ClinicSettings = {
   defaultHourlyRate: 180,
   defaultOverheadPercent: 15,
   defaultTargetMarginPercent: 40,
+  googleDriveConnected: true,
+  googleDriveEmail: 'dra.rafaela.bastazini@gmail.com',
+  dailyBackupEnabled: true,
+  dailyBackupTime: '20:00',
+  lastDriveBackupAt: new Date().toISOString(),
 };
 
 export const initialClients: Client[] = [

@@ -12,6 +12,8 @@ import {
   Bell,
   Database,
   ShieldCheck,
+  Settings,
+  CloudUpload,
 } from 'lucide-react';
 import { useVetContext } from '../context/VetContext';
 import { BackupModal } from './BackupModal';
@@ -39,6 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { settings, medications, equipments, reminders } = useVetContext();
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [modalDefaultTab, setModalDefaultTab] = useState<'backup' | 'settings'>('backup');
 
   const lowStockMeds = medications.filter(
     (m) => m.stockQuantity <= m.minStockAlert
@@ -105,15 +108,32 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Backup & Security Button */}
+          {/* Backup & Security (Google Drive + Download JSON) */}
           <button
             id="btn-open-backup-modal"
-            onClick={() => setIsBackupModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300/80 transition-colors"
-            title="Backup e Segurança dos Dados (Exportar / Restaurar JSON)"
+            onClick={() => {
+              setModalDefaultTab('backup');
+              setIsBackupModalOpen(true);
+            }}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200/80 hover:bg-sky-100 transition-colors"
+            title="Backup Diário no Google Drive e Download Imediato em JSON"
           >
-            <Database className="w-3.5 h-3.5 text-slate-600" />
-            <span>Backup e Segurança</span>
+            <CloudUpload className="w-3.5 h-3.5 text-sky-600" />
+            <span>Backup Diário & Drive</span>
+          </button>
+
+          {/* Configurações Button */}
+          <button
+            id="btn-open-settings-modal"
+            onClick={() => {
+              setModalDefaultTab('settings');
+              setIsBackupModalOpen(true);
+            }}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300/80 transition-colors"
+            title="Configurações do Médico Veterinário e da Clínica"
+          >
+            <Settings className="w-3.5 h-3.5 text-slate-600" />
+            <span>Configurações</span>
           </button>
 
           {/* Start New Consultation */}
@@ -131,6 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
       <BackupModal
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
+        defaultTab={modalDefaultTab}
       />
 
       {/* Navigation Tabs */}

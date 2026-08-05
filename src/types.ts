@@ -163,4 +163,12 @@ export interface ClinicSettings {
   defaultHourlyRate: number; // R$/hour
   defaultOverheadPercent: number; // %
   defaultTargetMarginPercent: number; // %
+
+  // Google Drive & Security Backup Settings
+  googleDriveConnected?: boolean;
+  googleDriveEmail?: string;
+  dailyBackupEnabled?: boolean;
+  dailyBackupTime?: string; // e.g., '20:00'
+  lastDriveBackupAt?: string; // ISO date string or formatted string
+  lastJsonDownloadAt?: string;
 }

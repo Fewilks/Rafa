@@ -23,7 +23,7 @@ import {
 
 interface VetContextType {
   settings: ClinicSettings;
-  updateSettings: (newSettings: ClinicSettings) => void;
+  updateSettings: (newSettings: Partial<ClinicSettings>) => void;
 
   clients: Client[];
   pets: Pet[];
@@ -174,7 +174,13 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [transactions]);
 
   // Settings
-  const updateSettings = (newSettings: ClinicSettings) => setSettings(newSettings);
+  const updateSettings = (newFields: Partial<ClinicSettings>) => {
+    setSettings((prev) => {
+      const updated = { ...prev, ...newFields };
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Clients
   const addClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
