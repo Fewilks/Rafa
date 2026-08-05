@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Pet, Client, PetSpecies, PetGender } from '../types';
 import { PrintDocumentModal, PrintDocType } from './PrintDocumentModal';
+import { ClinicalTimeline } from './ClinicalTimeline';
 
 interface ClientPetRegistryProps {
   onStartConsultationForPet: (petId: string) => void;
@@ -534,97 +535,14 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                 </div>
               </div>
 
-              {/* Medical History (SOAP Consultations) */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold text-slate-800 flex items-center space-x-2">
-                  <FileText className="w-4 h-4 text-emerald-700" />
-                  <span>Prontuários & Histórico de Consultas ({activePetConsultations.length})</span>
-                </h4>
-
-                {activePetConsultations.length === 0 ? (
-                  <div className="p-4 bg-slate-50 rounded-xl text-center text-xs text-slate-400 border border-slate-200">
-                    Nenhum atendimento clínico gravado para este pet ainda.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {activePetConsultations.map((cons) => (
-                      <div
-                        key={cons.id}
-                        className="p-4 bg-white rounded-xl border border-slate-200 hover:border-emerald-300 transition-all space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-emerald-800">
-                            {cons.reason}
-                          </span>
-                          <span className="text-[11px] text-slate-400">
-                            {cons.date.split('-').reverse().join('/')} às {cons.time}
-                          </span>
-                        </div>
-                        {cons.soapAssessment && (
-                          <p className="text-xs text-slate-600 font-medium">
-                            <strong>Diagnóstico:</strong> {cons.soapAssessment}
-                          </p>
-                        )}
-                        {cons.requestedExams && (
-                          <p className="text-xs text-purple-900 bg-purple-50 p-2 rounded-lg border border-purple-100 font-medium">
-                            <strong>Exames Solicitados:</strong> {cons.requestedExams}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100">
-                          <span className="text-slate-500">
-                            {cons.prescribedMeds.length} medicamento(s) prescrito(s)
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            {/* Print Prescription / SOAP Button */}
-                            <button
-                              id={`btn-print-consultation-${cons.id}`}
-                              onClick={() => handlePrintConsultationDoc(cons.id)}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 border border-emerald-200 flex items-center space-x-1 transition-colors"
-                            >
-                              <Printer className="w-3 h-3" />
-                              <span>Imprimir / Gerar PDF</span>
-                            </button>
-                            <span className="font-bold text-emerald-800">
-                              R$ {cons.costBreakdown.finalChargedPrice.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Reminders & Vaccines */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold text-slate-800 flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-purple-700" />
-                  <span>Lembretes & Vacinações ({activePetReminders.length})</span>
-                </h4>
-
-                <div className="space-y-2">
-                  {activePetReminders.length === 0 ? (
-                    <div className="p-3 bg-slate-50 rounded-xl text-center text-xs text-slate-400 border border-slate-200">
-                      Nenhum agendamento futuro pendente.
-                    </div>
-                  ) : (
-                    activePetReminders.map((rem) => (
-                      <div
-                        key={rem.id}
-                        className="p-3 rounded-xl bg-purple-50/60 border border-purple-200/80 flex items-center justify-between text-xs"
-                      >
-                        <div>
-                          <p className="font-bold text-purple-950">{rem.title}</p>
-                          <p className="text-slate-500 text-[11px]">{rem.type}</p>
-                        </div>
-                        <span className="font-bold text-purple-800 bg-purple-100 px-2.5 py-1 rounded-lg">
-                          {rem.date.split('-').reverse().join('/')} às {rem.time}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+                {/* Chronological Clinical Timeline View */}
+                <ClinicalTimeline
+                  consultations={activePetConsultations}
+                  reminders={activePetReminders}
+                  pet={selectedPet}
+                  onPrintConsultationDoc={handlePrintConsultationDoc}
+                  onStartConsultationForPet={onStartConsultationForPet}
+                />
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">

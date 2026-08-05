@@ -39,11 +39,14 @@ export interface EquipmentItem {
   name: string;
   category: EquipmentCategory;
   stockQuantity: number;
-  unit: 'unidade' | 'caixa' | 'pacote' | 'rolo' | 'par';
+  unit: 'unidade' | 'caixa' | 'pacote' | 'rolo' | 'par' | 'ampola' | 'frasco';
   minStockAlert: number;
   unitCost: number; // Cost price in R$
+  salePrice?: number; // Optional sale/charge price in R$
+  isReusable?: boolean; // Whether the item is reusable vs single-use disposable
   supplier?: string;
   notes?: string;
+  batchNumber?: string;
   expirationDate?: string;
 }
 
