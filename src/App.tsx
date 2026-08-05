@@ -64,7 +64,7 @@ function DashboardContent() {
 
         {activeTab === 'medications' && <MedicationManager />}
 
-        {activeTab === 'equipamentos' && <EquipmentManager />}
+        {activeTab === 'equipment' && <EquipmentManager />}
 
         {activeTab === 'reminders' && <RemindersSystem />}
 

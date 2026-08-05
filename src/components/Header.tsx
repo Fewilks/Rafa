@@ -10,8 +10,6 @@ import {
   PlusCircle,
   AlertTriangle,
   Bell,
-  RefreshCw,
-  Trash2,
 } from 'lucide-react';
 import { useVetContext } from '../context/VetContext';
 
@@ -36,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onOpenNewConsultation,
 }) => {
-  const { settings, medications, equipments, reminders, resetAllData, clearAllData } = useVetContext();
+  const { settings, medications, equipments, reminders } = useVetContext();
 
   const lowStockMeds = medications.filter(
     (m) => m.stockQuantity <= m.minStockAlert
@@ -111,39 +109,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <PlusCircle className="w-4 h-4" />
             <span>Novo Atendimento</span>
-          </button>
-
-          {/* Clear All Data for Manual Fill */}
-          <button
-            id="btn-clear-all-data"
-            onClick={() => {
-              if (
-                confirm(
-                  'Deseja APAGAR TODOS os dados para iniciar o preenchimento manual do zero?\n\nEsta ação limpa todos os clientes, pets, medicamentos, equipamentos, atendimentos e transações.'
-                )
-              ) {
-                clearAllData();
-              }
-            }}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors"
-            title="Limpar todos os dados e começar do zero para preenchimento manual"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-            <span>Limpar Dados (Do Zero)</span>
-          </button>
-
-          {/* Reset Demo Data */}
-          <button
-            id="btn-reset-data"
-            onClick={() => {
-              if (confirm('Deseja restaurar os dados de demonstração originais?')) {
-                resetAllData();
-              }
-            }}
-            className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 border border-slate-200/80 transition-colors"
-            title="Restaurar dados de demonstração"
-          >
-            <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useVetContext } from '../context/VetContext';
 import {
   Stethoscope,
   FileText,
@@ -15,6 +16,7 @@ import {
   AlertCircle,
   Syringe,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import { Consultation, Reminder, Pet } from '../types';
 
@@ -41,6 +43,7 @@ export const ClinicalTimeline: React.FC<ClinicalTimelineProps> = ({
   onPrintConsultationDoc,
   onStartConsultationForPet,
 }) => {
+  const { deleteConsultation } = useVetContext();
   const [filter, setFilter] = useState<TimelineFilter>('todos');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -302,14 +305,30 @@ export const ClinicalTimeline: React.FC<ClinicalTimelineProps> = ({
 
                       {/* Footer Actions & Pricing */}
                       <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <button
-                          id={`btn-timeline-print-${cons.id}`}
-                          onClick={() => onPrintConsultationDoc(cons.id)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 text-slate-700 font-bold flex items-center space-x-1.5 transition-colors"
-                        >
-                          <Printer className="w-3.5 h-3.5" />
-                          <span>Imprimir Receita / Prontuário</span>
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            id={`btn-timeline-print-${cons.id}`}
+                            onClick={() => onPrintConsultationDoc(cons.id)}
+                            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 border border-slate-200 text-slate-700 font-bold flex items-center space-x-1.5 transition-colors"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Imprimir Receita / Prontuário</span>
+                          </button>
+
+                          <button
+                            id={`btn-timeline-delete-cons-${cons.id}`}
+                            onClick={() => {
+                              if (confirm('Deseja realmente excluir este registro de consulta do prontuário?')) {
+                                deleteConsultation(cons.id);
+                              }
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-slate-200 text-slate-500 font-semibold flex items-center space-x-1 transition-colors"
+                            title="Excluir este atendimento"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Excluir</span>
+                          </button>
+                        </div>
 
                         <div className="text-right">
                           <span className="text-[11px] text-slate-400 mr-1.5">Total do Atendimento:</span>

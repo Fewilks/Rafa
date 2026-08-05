@@ -15,8 +15,9 @@ import {
   Stethoscope,
   Scissors,
   Check,
+  Pencil,
 } from 'lucide-react';
-import { ReminderType, ReminderStatus } from '../types';
+import { ReminderType, ReminderStatus, Reminder } from '../types';
 
 export const RemindersSystem: React.FC = () => {
   const {
@@ -35,8 +36,9 @@ export const RemindersSystem: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('Pendente');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddReminderModalOpen, setIsAddReminderModalOpen] = useState(false);
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
 
-  // New Reminder Form State
+  // New / Edit Reminder Form State
   const [reminderForm, setReminderForm] = useState({
     petId: pets[0]?.id || '',
     type: 'Vacinação' as ReminderType,
@@ -46,6 +48,32 @@ export const RemindersSystem: React.FC = () => {
     notes: '',
   });
 
+  const handleOpenAddReminder = () => {
+    setEditingReminderId(null);
+    setReminderForm({
+      petId: pets[0]?.id || '',
+      type: 'Vacinação',
+      title: '',
+      date: new Date().toISOString().split('T')[0],
+      time: '09:00',
+      notes: '',
+    });
+    setIsAddReminderModalOpen(true);
+  };
+
+  const handleOpenEditReminder = (rem: Reminder) => {
+    setEditingReminderId(rem.id);
+    setReminderForm({
+      petId: rem.petId,
+      type: rem.type,
+      title: rem.title,
+      date: rem.date,
+      time: rem.time,
+      notes: rem.notes || '',
+    });
+    setIsAddReminderModalOpen(true);
+  };
+
   const handleSaveReminder = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reminderForm.petId || !reminderForm.title) return;
@@ -53,12 +81,19 @@ export const RemindersSystem: React.FC = () => {
     const pet = getPetById(reminderForm.petId);
     const client = pet ? getClientById(pet.clientId) : null;
 
-    addReminder({
-      ...reminderForm,
-      clientId: client?.id || '',
-      status: 'Pendente',
-      tutorNotified: false,
-    });
+    if (editingReminderId) {
+      updateReminder(editingReminderId, {
+        ...reminderForm,
+        clientId: client?.id || '',
+      });
+    } else {
+      addReminder({
+        ...reminderForm,
+        clientId: client?.id || '',
+        status: 'Pendente',
+        tutorNotified: false,
+      });
+    }
 
     setReminderForm({
       petId: pets[0]?.id || '',
@@ -68,6 +103,7 @@ export const RemindersSystem: React.FC = () => {
       time: '09:00',
       notes: '',
     });
+    setEditingReminderId(null);
     setIsAddReminderModalOpen(false);
   };
 
@@ -120,7 +156,7 @@ Caso precise reagendar ou tenha dúvidas, por favor entre em contato conosc. Ten
 
         <button
           id="btn-open-add-reminder-modal"
-          onClick={() => setIsAddReminderModalOpen(true)}
+          onClick={handleOpenAddReminder}
           className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 shadow-sm flex items-center space-x-1.5 transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -241,6 +277,15 @@ Caso precise reagendar ou tenha dúvidas, por favor entre em contato conosc. Ten
                   </button>
 
                   <div className="flex items-center space-x-1">
+                    <button
+                      id={`btn-edit-reminder-${rem.id}`}
+                      onClick={() => handleOpenEditReminder(rem)}
+                      className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      title="Editar Agendamento"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+
                     {rem.status === 'Pendente' ? (
                       <button
                         id={`btn-complete-reminder-${rem.id}`}
@@ -278,12 +323,14 @@ Caso precise reagendar ou tenha dúvidas, por favor entre em contato conosc. Ten
         )}
       </div>
 
-      {/* Modal: Add New Reminder */}
+      {/* Modal: Add/Edit Reminder */}
       {isAddReminderModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-lg font-bold text-slate-800">Novo Agendamento</h3>
+              <h3 className="text-lg font-bold text-slate-800">
+                {editingReminderId ? 'Editar Agendamento' : 'Novo Agendamento'}
+              </h3>
               <button
                 onClick={() => setIsAddReminderModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600"

@@ -56,6 +56,7 @@ interface VetContextType {
   // Consultation methods
   addConsultation: (consultation: Omit<Consultation, 'id' | 'createdAt'>) => Consultation;
   updateConsultation: (id: string, consultation: Partial<Consultation>) => void;
+  deleteConsultation: (id: string) => void;
 
   // Reminder methods
   addReminder: (reminder: Omit<Reminder, 'id'>) => void;
@@ -361,6 +362,10 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const deleteConsultation = (id: string) => {
+    setConsultations((prev) => prev.filter((c) => c.id !== id));
+  };
+
   // Reminders
   const addReminder = (reminderData: Omit<Reminder, 'id'>) => {
     const newReminder: Reminder = {
@@ -461,6 +466,7 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteEquipment,
         addConsultation,
         updateConsultation,
+        deleteConsultation,
         addReminder,
         updateReminder,
         toggleReminderNotified,
