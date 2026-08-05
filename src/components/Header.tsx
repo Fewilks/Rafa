@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Stethoscope,
   Users,
@@ -10,8 +10,11 @@ import {
   PlusCircle,
   AlertTriangle,
   Bell,
+  Database,
+  ShieldCheck,
 } from 'lucide-react';
 import { useVetContext } from '../context/VetContext';
+import { BackupModal } from './BackupModal';
 
 export type TabType =
   | 'dashboard'
@@ -35,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNewConsultation,
 }) => {
   const { settings, medications, equipments, reminders } = useVetContext();
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   const lowStockMeds = medications.filter(
     (m) => m.stockQuantity <= m.minStockAlert
@@ -101,6 +105,17 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {/* Backup & Security Button */}
+          <button
+            id="btn-open-backup-modal"
+            onClick={() => setIsBackupModalOpen(true)}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300/80 transition-colors"
+            title="Backup e Segurança dos Dados (Exportar / Restaurar JSON)"
+          >
+            <Database className="w-3.5 h-3.5 text-slate-600" />
+            <span>Backup e Segurança</span>
+          </button>
+
           {/* Start New Consultation */}
           <button
             id="btn-new-consultation"
@@ -112,6 +127,11 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       </div>
+
+      <BackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+      />
 
       {/* Navigation Tabs */}
       <div className="bg-slate-50/90 border-t border-slate-200/80">

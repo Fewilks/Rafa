@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { PrescribedMedication } from '../types';
+import { calculateAge } from '../utils/dateUtils';
 
 interface ClinicalConsultationModalProps {
   isOpen: boolean;
@@ -187,7 +188,7 @@ export const ClinicalConsultationModal: React.FC<ClinicalConsultationModalProps>
                   const tutor = clients.find((c) => c.id === p.clientId);
                   return (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.species} - {p.weightKg}kg) • Tutor: {tutor?.name}
+                      {p.name} ({p.species} • {calculateAge(p.birthDate)} • {p.weightKg}kg) • Tutor: {tutor?.name}
                     </option>
                   );
                 })}

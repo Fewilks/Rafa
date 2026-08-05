@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useVetContext } from '../context/VetContext';
 import { Consultation, Pet, Client } from '../types';
 import { Printer, X, FileText, Pill, Copy, Check, Download, ShieldAlert } from 'lucide-react';
+import { calculateAge, formatDateBR } from '../utils/dateUtils';
 
 export type PrintDocType = 'prescription' | 'consultation_soap' | 'patient_file';
 
@@ -202,6 +203,9 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
                   <p className="text-[11px] text-slate-600">
                     Sexo: <strong>{pet?.gender}</strong> • Peso: <strong>{pet?.weightKg} kg</strong>
                   </p>
+                  <p className="text-[11px] text-slate-600">
+                    Nasc.: <strong>{formatDateBR(pet?.birthDate)}</strong> • Idade: <strong className="text-emerald-800">{calculateAge(pet?.birthDate)}</strong>
+                  </p>
                 </div>
 
                 <div>
@@ -356,8 +360,8 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                       <p>Status Vacinal: <strong className="text-emerald-700">{pet?.vaccinationStatus}</strong></p>
                       <p>Microchip: <strong>{pet?.microchip || 'Não cadastrado'}</strong></p>
-                      <p>Alergias: <strong>{pet?.allergies || 'Nenhuma registrada'}</strong></p>
-                      <p>Total de Atendimentos: <strong>{activeConsultations.length} consultas</strong></p>
+                      <p>Data Nasc.: <strong>{formatDateBR(pet?.birthDate)}</strong> ({calculateAge(pet?.birthDate)})</p>
+                      <p>Total Atendimentos: <strong>{activeConsultations.length} consultas</strong></p>
                     </div>
                   </div>
 

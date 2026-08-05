@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { EquipmentItem, EquipmentCategory } from '../types';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const EquipmentManager: React.FC = () => {
   const {
@@ -32,6 +33,17 @@ export const EquipmentManager: React.FC = () => {
   const [selectedUsageFilter, setSelectedUsageFilter] = useState<'todas' | 'reutilizavel' | 'descartavel'>('todas');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Safety Confirmation Delete Modal State
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    id: string;
+    name: string;
+  }>({
+    isOpen: false,
+    id: '',
+    name: '',
+  });
 
   const [form, setForm] = useState({
     name: '',
@@ -412,11 +424,14 @@ export const EquipmentManager: React.FC = () => {
                         <button
                           id={`btn-delete-eq-${item.id}`}
                           onClick={() => {
-                            if (confirm(`Excluir ${item.name} da lista?`)) {
-                              deleteEquipment(item.id);
-                            }
+                            setDeleteConfirmState({
+                              isOpen: true,
+                              id: item.id,
+                              name: item.name,
+                            });
                           }}
                           className="p-1 rounded text-slate-400 hover:text-rose-600 transition-colors"
+                          title="Excluir insumo/equipamento"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -661,6 +676,19 @@ export const EquipmentManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Safety Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirmState.isOpen}
+        title="Excluir Insumo / Equipamento"
+        itemName={deleteConfirmState.name}
+        description="Tem certeza de que deseja remover este item do controle de estoque e insumos?"
+        onConfirm={() => {
+          deleteEquipment(deleteConfirmState.id);
+          setDeleteConfirmState({ isOpen: false, id: '', name: '' });
+        }}
+        onCancel={() => setDeleteConfirmState({ isOpen: false, id: '', name: '' })}
+      />
     </div>
   );
 };

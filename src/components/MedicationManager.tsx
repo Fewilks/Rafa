@@ -17,6 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { Medication, MedicationCategory } from '../types';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 export const MedicationManager: React.FC = () => {
   const {
@@ -35,6 +36,17 @@ export const MedicationManager: React.FC = () => {
   const [isAddMedModalOpen, setIsAddMedModalOpen] = useState(false);
   const [editingMedId, setEditingMedId] = useState<string | null>(null);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+
+  // Safety Confirmation Delete Modal State
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    id: string;
+    name: string;
+  }>({
+    isOpen: false,
+    id: '',
+    name: '',
+  });
 
   // New / Edit Med Form State
   const [medForm, setMedForm] = useState({
@@ -372,11 +384,14 @@ export const MedicationManager: React.FC = () => {
                         <button
                           id={`btn-delete-med-${med.id}`}
                           onClick={() => {
-                            if (confirm(`Remover ${med.name} do estoque?`)) {
-                              deleteMedication(med.id);
-                            }
+                            setDeleteConfirmState({
+                              isOpen: true,
+                              id: med.id,
+                              name: med.name,
+                            });
                           }}
                           className="p-1 rounded text-slate-400 hover:text-rose-600 transition-colors"
+                          title="Excluir medicamento"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -756,6 +771,19 @@ export const MedicationManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Safety Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirmState.isOpen}
+        title="Excluir Medicamento do Estoque"
+        itemName={deleteConfirmState.name}
+        description="Tem certeza de que deseja remover este medicamento da farmácia? O registro será excluído do controle de estoque."
+        onConfirm={() => {
+          deleteMedication(deleteConfirmState.id);
+          setDeleteConfirmState({ isOpen: false, id: '', name: '' });
+        }}
+        onCancel={() => setDeleteConfirmState({ isOpen: false, id: '', name: '' })}
+      />
     </div>
   );
 };

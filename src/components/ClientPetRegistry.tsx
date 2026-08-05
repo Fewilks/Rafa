@@ -22,6 +22,8 @@ import {
 import { Pet, Client, PetSpecies, PetGender } from '../types';
 import { PrintDocumentModal, PrintDocType } from './PrintDocumentModal';
 import { ClinicalTimeline } from './ClinicalTimeline';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { calculateAge, formatDateBR } from '../utils/dateUtils';
 
 interface ClientPetRegistryProps {
   onStartConsultationForPet: (petId: string) => void;
@@ -60,6 +62,19 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [printDocType, setPrintDocType] = useState<PrintDocType>('patient_file');
   const [printConsultationId, setPrintConsultationId] = useState<string | undefined>(undefined);
+
+  // Safety Confirmation Delete Modal State
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    type: 'client' | 'pet' | null;
+    id: string;
+    name: string;
+  }>({
+    isOpen: false,
+    type: null,
+    id: '',
+    name: '',
+  });
 
   // Client Form State
   const [clientForm, setClientForm] = useState({
@@ -139,12 +154,21 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
   };
 
   const handleDeleteClientClick = (clientId: string, clientName: string) => {
-    if (confirm(`Deseja realmente excluir o tutor "${clientName}" e todos os seus pets cadastrados?`)) {
-      deleteClient(clientId);
-      if (selectedPet && selectedPet.clientId === clientId) {
-        setSelectedPet(pets.find((p) => p.clientId !== clientId) || null);
-      }
-    }
+    setDeleteConfirmState({
+      isOpen: true,
+      type: 'client',
+      id: clientId,
+      name: clientName,
+    });
+  };
+
+  const handleDeletePetClick = (petId: string, petName: string) => {
+    setDeleteConfirmState({
+      isOpen: true,
+      type: 'pet',
+      id: petId,
+      name: petName,
+    });
   };
 
   // Handlers for Pet
@@ -203,12 +227,18 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
     setEditingPet(null);
   };
 
-  const handleDeletePetClick = (petId: string, petName: string) => {
-    if (confirm(`Deseja realmente excluir o cadastro do pet "${petName}"?`)) {
-      deletePet(petId);
-      const remaining = pets.filter((p) => p.id !== petId);
+  const handleConfirmDelete = () => {
+    if (deleteConfirmState.type === 'client') {
+      deleteClient(deleteConfirmState.id);
+      if (selectedPet && selectedPet.clientId === deleteConfirmState.id) {
+        setSelectedPet(pets.find((p) => p.clientId !== deleteConfirmState.id) || null);
+      }
+    } else if (deleteConfirmState.type === 'pet') {
+      deletePet(deleteConfirmState.id);
+      const remaining = pets.filter((p) => p.id !== deleteConfirmState.id);
       setSelectedPet(remaining[0] || null);
     }
+    setDeleteConfirmState({ isOpen: false, type: null, id: '', name: '' });
   };
 
   // Printing Handlers
@@ -355,6 +385,10 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                         <p className="text-xs text-slate-500 mt-0.5">
                           Tutor: <strong className="text-slate-700">{tutor?.name || 'Não informado'}</strong>
                         </p>
+                        <p className="text-[11px] font-semibold text-emerald-700 mt-0.5 flex items-center space-x-1">
+                          <Calendar className="w-3 h-3 text-emerald-600 inline shrink-0" />
+                          <span>Idade: {calculateAge(pet.birthDate)}</span>
+                        </p>
                       </div>
                     </div>
 
@@ -432,7 +466,8 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                     </div>
                     <p className="text-xs text-slate-500 font-medium mt-1">
                       Espécie: <strong>{selectedPet.species}</strong> • Raça:{' '}
-                      <strong>{selectedPet.breed}</strong> • Peso:{' '}
+                      <strong>{selectedPet.breed}</strong> • Idade:{' '}
+                      <strong className="text-emerald-700 font-bold">{calculateAge(selectedPet.birthDate)}</strong> ({formatDateBR(selectedPet.birthDate)}) • Peso:{' '}
                       <strong>{selectedPet.weightKg} kg</strong>
                     </p>
                   </div>
@@ -529,8 +564,12 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                   <p className="text-xs font-semibold text-slate-800">
                     {selectedPet.allergies || 'Nenhuma alergia relatada pelo tutor.'}
                   </p>
-                  <div className="text-[11px] text-slate-500 pt-1 border-t border-amber-200/60">
-                    Microchip: <strong>{selectedPet.microchip || 'Não informado'}</strong>
+                  <div className="text-[11px] text-slate-600 pt-2 border-t border-amber-200/60 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span>Microchip: <strong>{selectedPet.microchip || 'Não informado'}</strong></span>
+                    <span>•</span>
+                    <span>Nascimento: <strong>{formatDateBR(selectedPet.birthDate)}</strong></span>
+                    <span>•</span>
+                    <span>Idade Atual: <strong className="text-emerald-800 font-bold">{calculateAge(selectedPet.birthDate)}</strong></span>
                   </div>
                 </div>
               </div>
@@ -781,6 +820,26 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
                 </div>
               </div>
 
+              {/* Data de Nascimento & Idade Calculada */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Data de Nascimento</label>
+                  <input
+                    type="date"
+                    value={petForm.birthDate}
+                    onChange={(e) => setPetForm({ ...petForm, birthDate: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Idade Hoje (Calculada)</label>
+                  <div className="w-full p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 text-emerald-900 font-bold text-xs flex items-center justify-between min-h-[38px]">
+                    <span>{calculateAge(petForm.birthDate)}</span>
+                    <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Microchip / Registro</label>
                 <input
@@ -830,6 +889,24 @@ export const ClientPetRegistry: React.FC<ClientPetRegistryProps> = ({
         docType={printDocType}
         consultationId={printConsultationId}
         petId={selectedPet?.id}
+      />
+
+      {/* Confirm Delete Safety Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirmState.isOpen}
+        title={
+          deleteConfirmState.type === 'client'
+            ? 'Excluir Tutor Cadastrado'
+            : 'Excluir Paciente (Pet)'
+        }
+        itemName={deleteConfirmState.name}
+        description={
+          deleteConfirmState.type === 'client'
+            ? 'Tem certeza que deseja remover este tutor e o vínculo dos seus pacientes? Esta ação não pode ser desfeita.'
+            : 'Tem certeza que deseja excluir o prontuário e cadastro deste paciente?'
+        }
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirmState({ isOpen: false, type: null, id: '', name: '' })}
       />
     </div>
   );

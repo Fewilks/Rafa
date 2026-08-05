@@ -89,6 +89,10 @@ interface VetContextType {
   // Reset to initial data or clear all data manually
   resetAllData: () => void;
   clearAllData: () => void;
+
+  // Backup & Restore
+  exportBackup: () => void;
+  restoreBackup: (jsonString: string) => { success: boolean; message: string };
 }
 
 const VetContext = createContext<VetContextType | undefined>(undefined);
@@ -438,6 +442,94 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.clear();
   };
 
+  const exportBackup = () => {
+    const backupData = {
+      version: '1.0',
+      appName: 'Sistema Veterinário Dra. Rafaela Bastazini',
+      exportedAt: new Date().toISOString(),
+      data: {
+        settings,
+        clients,
+        pets,
+        medications,
+        equipments,
+        consultations,
+        reminders,
+        transactions,
+      },
+    };
+
+    const dataStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const dateFormatted = new Date().toISOString().split('T')[0];
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `backup_vet_bastazini_${dateFormatted}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const restoreBackup = (jsonString: string): { success: boolean; message: string } => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      const content = parsed.data || parsed; // Support both wrapped format and direct object format
+
+      if (!content || typeof content !== 'object') {
+        return { success: false, message: 'Arquivo de backup inválido ou corrompido.' };
+      }
+
+      let restoredCount = 0;
+      if (content.settings) {
+        setSettings(content.settings);
+        restoredCount++;
+      }
+      if (Array.isArray(content.clients)) {
+        setClients(content.clients);
+        restoredCount++;
+      }
+      if (Array.isArray(content.pets)) {
+        setPets(content.pets);
+        restoredCount++;
+      }
+      if (Array.isArray(content.medications)) {
+        setMedications(content.medications);
+        restoredCount++;
+      }
+      if (Array.isArray(content.equipments)) {
+        setEquipments(content.equipments);
+        restoredCount++;
+      }
+      if (Array.isArray(content.consultations)) {
+        setConsultations(content.consultations);
+        restoredCount++;
+      }
+      if (Array.isArray(content.reminders)) {
+        setReminders(content.reminders);
+        restoredCount++;
+      }
+      if (Array.isArray(content.transactions)) {
+        setTransactions(content.transactions);
+        restoredCount++;
+      }
+
+      if (restoredCount === 0) {
+        return { success: false, message: 'Nenhum dado válido foi encontrado no arquivo de backup.' };
+      }
+
+      return {
+        success: true,
+        message: 'Backup restaurado com sucesso! Os dados foram carregados com segurança.',
+      };
+    } catch (error) {
+      console.error('Erro ao restaurar backup:', error);
+      return { success: false, message: 'Falha ao ler o arquivo JSON. Certifique-se de selecionar um arquivo .json de backup válido.' };
+    }
+  };
+
   return (
     <VetContext.Provider
       value={{
@@ -481,6 +573,8 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getRemindersByPetId,
         resetAllData,
         clearAllData,
+        exportBackup,
+        restoreBackup,
       }}
     >
       {children}
