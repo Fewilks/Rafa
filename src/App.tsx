@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VetProvider, useVetContext } from './context/VetContext';
 import { Header, TabType } from './components/Header';
 import { DashboardOverview } from './components/DashboardOverview';
@@ -21,6 +21,10 @@ function DashboardContent() {
   >(undefined);
 
   const { settings } = useVetContext();
+
+  useEffect(() => {
+    document.title = settings.clinicName || 'Bastazini Medicina Veterinária';
+  }, [settings.clinicName]);
 
   const handleStartConsultationForPet = (petId: string) => {
     setConsultationPreSelectedPetId(petId);

@@ -526,10 +526,10 @@ export const ClinicalConsultationModal: React.FC<ClinicalConsultationModalProps>
         </form>
 
         {/* Hidden Formatted Document for jsPDF & html2canvas capture */}
-        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', pointerEvents: 'none' }}>
+        <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', pointerEvents: 'none' }}>
           <div
             ref={pdfContainerRef}
-            className="bg-white text-slate-900 w-[720px] p-10 font-sans text-xs space-y-6 leading-relaxed border border-slate-200"
+            className="printable-document bg-white text-slate-900 w-[720px] p-10 font-sans text-xs space-y-6 leading-relaxed border border-slate-200"
           >
             {/* Header / Letterhead */}
             <div className="flex items-start justify-between pb-4 border-b-2 border-emerald-800">

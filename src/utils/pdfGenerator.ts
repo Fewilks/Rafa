@@ -3,12 +3,49 @@ import html2canvas from 'html2canvas';
 
 /**
  * Captures an HTML element and generates a downloadable PDF file using html2canvas & jsPDF.
+ * Temporarily brings hidden/off-screen printable elements into the active layout to guarantee
+ * non-blank high-resolution rendering.
  */
 export const downloadElementAsPDF = async (
   element: HTMLElement,
   fileName: string = 'documento-veterinario.pdf'
 ): Promise<void> => {
   try {
+    // Store original element styles to restore after capture
+    const origPosition = element.style.position;
+    const origLeft = element.style.left;
+    const origTop = element.style.top;
+    const origZIndex = element.style.zIndex;
+    const origOpacity = element.style.opacity;
+    const origVisibility = element.style.visibility;
+    const origDisplay = element.style.display;
+
+    // Save parent wrapper styles if any
+    const parent = element.parentElement;
+    const parentOrigPosition = parent ? parent.style.position : '';
+    const parentOrigLeft = parent ? parent.style.left : '';
+    const parentOrigTop = parent ? parent.style.top : '';
+    const parentOrigZIndex = parent ? parent.style.zIndex : '';
+
+    // Bring element into active layout temporarily
+    if (parent) {
+      parent.style.position = 'fixed';
+      parent.style.left = '0';
+      parent.style.top = '0';
+      parent.style.zIndex = '9999';
+    }
+
+    element.style.position = 'fixed';
+    element.style.left = '0';
+    element.style.top = '0';
+    element.style.zIndex = '9999';
+    element.style.opacity = '1';
+    element.style.visibility = 'visible';
+    element.style.display = 'block';
+
+    // Allow browser layout pass
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
     const canvas = await html2canvas(element, {
       scale: 2, // High resolution capture
       useCORS: true,
@@ -16,31 +53,24 @@ export const downloadElementAsPDF = async (
       backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
-      windowWidth: 1024,
-      onclone: (clonedDoc, clonedElement) => {
-        // Ensure cloned element is placed visibly at top left of virtual canvas
-        if (clonedElement) {
-          clonedElement.style.position = 'static';
-          clonedElement.style.left = '0';
-          clonedElement.style.top = '0';
-          clonedElement.style.margin = '0';
-          clonedElement.style.transform = 'none';
-          clonedElement.style.visibility = 'visible';
-          clonedElement.style.display = 'block';
-          clonedElement.style.opacity = '1';
-        }
-
-        // Also ensure wrapper container in cloned document is visible
-        const wrapper = clonedElement?.parentElement;
-        if (wrapper) {
-          wrapper.style.position = 'static';
-          wrapper.style.left = '0';
-          wrapper.style.top = '0';
-          wrapper.style.visibility = 'visible';
-          wrapper.style.display = 'block';
-        }
-      },
+      windowWidth: element.scrollWidth || 800,
     });
+
+    // Restore original element and parent styles immediately
+    element.style.position = origPosition;
+    element.style.left = origLeft;
+    element.style.top = origTop;
+    element.style.zIndex = origZIndex;
+    element.style.opacity = origOpacity;
+    element.style.visibility = origVisibility;
+    element.style.display = origDisplay;
+
+    if (parent) {
+      parent.style.position = parentOrigPosition;
+      parent.style.left = parentOrigLeft;
+      parent.style.top = parentOrigTop;
+      parent.style.zIndex = parentOrigZIndex;
+    }
 
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
