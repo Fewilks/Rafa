@@ -10,6 +10,7 @@ export interface Client {
   address: string;
   notes?: string;
   createdAt: string;
+  archived?: boolean;
 }
 
 export interface Pet {
@@ -25,6 +26,7 @@ export interface Pet {
   allergies?: string;
   vaccinationStatus: 'Em Dia' | 'Pendente' | 'Atrasada';
   photoUrl?: string;
+  archived?: boolean;
 }
 
 export type EquipmentCategory =

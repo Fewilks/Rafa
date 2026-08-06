@@ -1,29 +1,51 @@
 @import "tailwindcss";
 
 @media print {
-  /* Hide all non-printable UI elements */
-  body * {
-    visibility: hidden !important;
+  /* Hide standard page elements when printing */
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
   }
-  
+
+  body > *:not(.print-modal-container) {
+    display: none !important;
+  }
+
   .no-print {
     display: none !important;
   }
 
-  /* Show only printable document */
+  /* Ensure print modal container resets layout during printing */
+  .print-modal-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Make printable document explicit and visible */
   .printable-document,
   .printable-document * {
     visibility: visible !important;
   }
-  
+
   .printable-document {
-    position: absolute !important;
+    position: relative !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 15mm !important;
+    padding: 10mm 12mm !important;
     border: none !important;
     box-shadow: none !important;
     background: #ffffff !important;

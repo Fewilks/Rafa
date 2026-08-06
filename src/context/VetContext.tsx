@@ -37,9 +37,13 @@ interface VetContextType {
   addClient: (client: Omit<Client, 'id' | 'createdAt'>) => Client;
   updateClient: (id: string, client: Partial<Client>) => void;
   deleteClient: (id: string) => void;
+  archiveClient: (id: string) => void;
+  unarchiveClient: (id: string) => void;
   addPet: (pet: Omit<Pet, 'id'>) => Pet;
   updatePet: (id: string, pet: Partial<Pet>) => void;
   deletePet: (id: string) => void;
+  archivePet: (id: string) => void;
+  unarchivePet: (id: string) => void;
 
   // Medication methods
   addMedication: (med: Omit<Medication, 'id'>) => void;
@@ -97,7 +101,7 @@ interface VetContextType {
 
 const VetContext = createContext<VetContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'vet_bastazini_dashboard_data_v1';
+const LOCAL_STORAGE_KEY = 'vet_bastazini_dashboard_data_v2_zeroed';
 
 export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<ClinicSettings>(() => {
@@ -204,6 +208,18 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPets((prev) => prev.filter((p) => p.clientId !== id));
   };
 
+  const archiveClient = (id: string) => {
+    setClients((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, archived: true } : c))
+    );
+  };
+
+  const unarchiveClient = (id: string) => {
+    setClients((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, archived: false } : c))
+    );
+  };
+
   // Pets
   const addPet = (petData: Omit<Pet, 'id'>) => {
     const newPet: Pet = {
@@ -222,6 +238,18 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deletePet = (id: string) => {
     setPets((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const archivePet = (id: string) => {
+    setPets((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, archived: true } : p))
+    );
+  };
+
+  const unarchivePet = (id: string) => {
+    setPets((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, archived: false } : p))
+    );
   };
 
   // Medications
@@ -551,9 +579,13 @@ export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addClient,
         updateClient,
         deleteClient,
+        archiveClient,
+        unarchiveClient,
         addPet,
         updatePet,
         deletePet,
+        archivePet,
+        unarchivePet,
         addMedication,
         updateMedication,
         adjustMedicationStock,

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useVetContext } from '../context/VetContext';
 import { Consultation, Pet, Client } from '../types';
-import { Printer, X, FileText, Pill, Copy, Check, Download, ShieldAlert } from 'lucide-react';
+import { Printer, X, FileText, Pill, Copy, Check, Download, ShieldAlert, Loader2 } from 'lucide-react';
 import { calculateAge, formatDateBR } from '../utils/dateUtils';
+import { downloadElementAsPDF } from '../utils/pdfGenerator';
 
 export type PrintDocType = 'prescription' | 'consultation_soap' | 'patient_file';
 
@@ -32,6 +33,8 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
 
   const [docType, setDocType] = useState<PrintDocType>(initialDocType);
   const [copiedText, setCopiedText] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const documentRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
 
@@ -53,6 +56,26 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!documentRef.current) return;
+    setIsGeneratingPDF(true);
+    try {
+      const formattedDateStr = consultation
+        ? consultation.date.replace(/-/g, '')
+        : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const petNameSanitized = (pet?.name || 'paciente').toLowerCase().replace(/\s+/g, '_');
+      const fileName = `${docType}_${petNameSanitized}_${formattedDateStr}.pdf`;
+      
+      await downloadElementAsPDF(documentRef.current, fileName);
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      // Fallback to browser print if capture fails
+      window.print();
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const handleCopyPrescriptionText = () => {
@@ -92,8 +115,8 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
     : new Date().toLocaleDateString('pt-BR');
 
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto no-print">
-      <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl flex flex-col max-h-[94vh] border border-slate-200">
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto print-modal-container">
+      <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl flex flex-col max-h-[94vh] border border-slate-200 print-modal-content">
         {/* Top Control Header (Hidden on Print) */}
         <div className="p-4 bg-slate-900 text-white rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
           <div className="flex items-center space-x-3">
@@ -112,30 +135,66 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
 
           <div className="flex items-center space-x-2">
             {/* Document Switcher */}
-            {consultation && (
-              <div className="bg-slate-800 p-1 rounded-xl flex items-center space-x-1 text-xs">
-                <button
-                  onClick={() => setDocType('prescription')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                    docType === 'prescription'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  Receituário
-                </button>
-                <button
-                  onClick={() => setDocType('consultation_soap')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                    docType === 'consultation_soap'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  Prontuário SOAP
-                </button>
-              </div>
-            )}
+            <div className="bg-slate-800 p-1 rounded-xl flex items-center space-x-1 text-xs overflow-x-auto">
+              {consultation && (
+                <>
+                  <button
+                    onClick={() => setDocType('prescription')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                      docType === 'prescription'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Receituário
+                  </button>
+                  <button
+                    onClick={() => setDocType('consultation_soap')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                      docType === 'consultation_soap'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Prontuário SOAP
+                  </button>
+                  {consultation.requestedExams && (
+                    <button
+                      onClick={() => setDocType('exam_request')}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                        docType === 'exam_request'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      Exames
+                    </button>
+                  )}
+                  {consultation.costBreakdown && (
+                    <button
+                      onClick={() => setDocType('receipt')}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                        docType === 'receipt'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      Recibo
+                    </button>
+                  )}
+                </>
+              )}
+              <button
+                onClick={() => setDocType('patient_file')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
+                  docType === 'patient_file'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Ficha Geral
+              </button>
+            </div>
 
             <button
               onClick={handleCopyPrescriptionText}
@@ -147,12 +206,33 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
             </button>
 
             <button
+              id="btn-download-jspdf-file"
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPDF}
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold text-xs shadow-md flex items-center space-x-2 transition-all disabled:opacity-50"
+              title="Baixar arquivo PDF com jsPDF e html2canvas"
+            >
+              {isGeneratingPDF ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-950" />
+                  <span>Gerando PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Baixar PDF (jsPDF)</span>
+                </>
+              )}
+            </button>
+
+            <button
               id="btn-trigger-print-pdf"
               onClick={handlePrint}
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold text-xs shadow-md flex items-center space-x-2 transition-all"
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 flex items-center space-x-1.5 transition-all"
+              title="Abrir diálogo de impressão do navegador"
             >
-              <Printer className="w-4 h-4" />
-              <span>Imprimir / Salvar PDF</span>
+              <Printer className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Imprimir</span>
             </button>
 
             <button
@@ -166,7 +246,10 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
 
         {/* Printable Document Sheet View */}
         <div className="p-6 sm:p-10 overflow-y-auto bg-slate-100 flex-1 flex justify-center">
-          <div className="printable-document bg-white text-slate-900 w-full max-w-[720px] p-8 sm:p-12 shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between space-y-8 min-h-[840px] text-xs leading-relaxed">
+          <div
+            ref={documentRef}
+            className="printable-document bg-white text-slate-900 w-full max-w-[720px] p-8 sm:p-12 shadow-lg rounded-xl border border-slate-200 flex flex-col justify-between space-y-8 min-h-[840px] text-xs leading-relaxed"
+          >
             
             {/* Clinic Letterhead Header */}
             <div>
@@ -212,9 +295,11 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Dados do Tutor Responsável
                   </span>
-                  <p className="text-sm font-bold text-slate-900 mt-0.5">{client?.name || 'Tutor'}</p>
-                  <p className="text-[11px] text-slate-600">Telefone / WhatsApp: <strong>{client?.phone}</strong></p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">{client?.name || 'Tutor Não Informado'}</p>
+                  <p className="text-[11px] text-slate-600">Telefone / WhatsApp: <strong>{client?.phone || 'Não informado'}</strong></p>
                   <p className="text-[11px] text-slate-600">CPF: <strong>{client?.cpf || 'Não informado'}</strong></p>
+                  {client?.email && <p className="text-[11px] text-slate-600">E-mail: <strong>{client.email}</strong></p>}
+                  {client?.address && <p className="text-[11px] text-slate-600">Endereço: <strong>{client.address}</strong></p>}
                 </div>
               </div>
             </div>
@@ -409,6 +494,60 @@ export const PrintDocumentModal: React.FC<PrintDocumentModalProps> = ({
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. SOLICITAÇÃO DE EXAMES COMPLEMENTARES */}
+              {docType === 'exam_request' && (
+                <div className="space-y-6">
+                  <div className="text-center py-2 border-b border-dashed border-slate-300">
+                    <h2 className="text-base font-extrabold uppercase text-slate-800 tracking-wider">
+                      SOLICITAÇÃO DE EXAMES COMPLEMENTARES
+                    </h2>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                    <span className="font-bold text-purple-950 text-xs uppercase tracking-wider block">
+                      Exames Solicitados pelo Médico Veterinário
+                    </span>
+                    <p className="text-sm font-semibold text-slate-800 whitespace-pre-wrap leading-relaxed">
+                      {consultation?.requestedExams || 'Nenhum exame específico detalhado nesta consulta.'}
+                    </p>
+                  </div>
+                  {consultation?.soapAssessment && (
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                      <span className="font-bold text-slate-700 uppercase tracking-wider block mb-1">
+                        Suspeita Clínica / Justificativa
+                      </span>
+                      <p className="text-slate-700">{consultation.soapAssessment}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 5. RECIBO DE PRESTAÇÃO DE SERVIÇOS VETERINÁRIOS */}
+              {docType === 'receipt' && (
+                <div className="space-y-6">
+                  <div className="text-center py-2 border-b border-dashed border-slate-300">
+                    <h2 className="text-base font-extrabold uppercase text-slate-800 tracking-wider">
+                      RECIBO DE PRESTAÇÃO DE SERVIÇOS VETERINÁRIOS
+                    </h2>
+                  </div>
+                  <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                    <p className="text-sm text-slate-800 leading-relaxed">
+                      Recebi de <strong className="text-slate-900">{client?.name || 'Tutor'}</strong>
+                      {client?.cpf ? ` (CPF: ${client.cpf})` : ''} a quantia de{' '}
+                      <strong className="text-emerald-800 text-base">
+                        R$ {consultation?.costBreakdown?.finalChargedPrice.toFixed(2) || '0.00'}
+                      </strong>{' '}
+                      referente ao atendimento veterinário do paciente <strong>{pet?.name}</strong> em {formattedDate}.
+                    </p>
+                    <div className="pt-3 border-t border-slate-200 text-xs text-slate-600 space-y-1">
+                      <p><strong>Descrição do Serviço:</strong> {consultation?.reason || 'Consulta Veterinária Especializada'}</p>
+                      {consultation?.prescribedMeds && consultation.prescribedMeds.length > 0 && (
+                        <p><strong>Medicamentos inclusos:</strong> {consultation.prescribedMeds.map((m) => m.medicationName).join(', ')}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
