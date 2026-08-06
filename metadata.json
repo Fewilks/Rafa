@@ -1,5 +1,5 @@
 {
-  "name": "Veterinário Dr. Rafael Bastazini",
+  "name": "Bastazini Medicina Veterinária",
   "description": "Dashboard veterinário completo para o Dr. Rafael Bastazini com ficha cadastral de pets e tutores, gestão de medicamentos, sistema de lembretes, controle financeiro com projeção de lucro e calculadora de preço sugerido para atendimentos.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -101,7 +101,7 @@ interface VetContextType {
 
 const VetContext = createContext<VetContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'vet_bastazini_dashboard_data_v2_zeroed';
+const LOCAL_STORAGE_KEY = 'vet_bastazini_dashboard_v3_clean';
 
 export const VetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<ClinicSettings>(() => {

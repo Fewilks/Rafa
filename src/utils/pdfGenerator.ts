@@ -14,7 +14,32 @@ export const downloadElementAsPDF = async (
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
-      windowWidth: element.scrollWidth,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 1024,
+      onclone: (clonedDoc, clonedElement) => {
+        // Ensure cloned element is placed visibly at top left of virtual canvas
+        if (clonedElement) {
+          clonedElement.style.position = 'static';
+          clonedElement.style.left = '0';
+          clonedElement.style.top = '0';
+          clonedElement.style.margin = '0';
+          clonedElement.style.transform = 'none';
+          clonedElement.style.visibility = 'visible';
+          clonedElement.style.display = 'block';
+          clonedElement.style.opacity = '1';
+        }
+
+        // Also ensure wrapper container in cloned document is visible
+        const wrapper = clonedElement?.parentElement;
+        if (wrapper) {
+          wrapper.style.position = 'static';
+          wrapper.style.left = '0';
+          wrapper.style.top = '0';
+          wrapper.style.visibility = 'visible';
+          wrapper.style.display = 'block';
+        }
+      },
     });
 
     const imgData = canvas.toDataURL('image/png');
